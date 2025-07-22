@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Salary Split & Tax Minimizer (PKR)</title>
+<style>
+  body { font-family: sans-serif; background: #f5f6fa; padding: 20px; }
+  .input-group { margin: 10px 0; }
+  label { margin-right: 10px; }
+  input[type=number] { width: 100px; padding: 5px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+  th, td { border: 1px solid #bbb; padding: 8px; text-align: center; }
+  th { background: #4e73df; color: white; }
+  tr:nth-child(even) { background: #f2f2f2; }
+</style>
+</head>
+<body>
+<h2>Salary Split & Tax Optimization (PKR)</h2>
+
+<div class="input-group">
+  <label>
+    USD Salary (monthly):
+    <input type="number" id="usdSalary" value="2375" min="0">
+  </label>
+  <label>
+    Conversion Rate (USD→PKR):
+    <input type="number" id="rate" value="285" min="0">
+  </label>
+  <label><input type="checkbox" id="autoCalc" checked> Auto‐compute on input</label>
+  <button id="computeBtn">Compute</button>
+</div>
+
+<div id="results"></div>
+
+<script>
+// FBR slabs FY 2025–26 based on confirmed rates:
+// 0–600k → 0%
+// 600,001–1,200,000 → 2.5% above 600k
+// 1.2–2.2m → 6000 + 11% above 1.2m
+// 2.2–3.2m → 116,000 + 23% above 2.2m
+// 3.2–4.1m → 346,000 + 30% above 3.2m
+// >4.1m → 616,000 + 35% above 4.1m :contentReference[oaicite:6]{index=6}
+function calcAnnualTax(yrIncome) {
+  let t=0;
+  if (yrIncome<=600000) t=0;
+  else if (yrIncome<=1200000) t=(yrIncome-600000)*0.025;
+  else if (yrIncome<=2200000) t=6000 + (yrIncome-1200000)*0.11;
+  else if (yrIncome<=3200000) t=116000 + (yrIncome-2200000)*0.23;
+  else if (yrIncome<=4100000) t=346000 + (yrIncome-3200000)*0.30;
+  else t=616000 + (yrIncome-4100000)*0.35;
+  return t;
+}
+
+function format(n) { return isNaN(n) ? '—' : n.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}); }
+
+function run() {
+  const u = parseFloat(usdSalary.value), r = parseFloat(rate.value);
+  if (isNaN(u) || isNaN(r)) return;
+  const totalPkr = u * r;
+  let bestSplit = {a:0,b:0,minTax:Infinity,table:''};
+
+  // iterate splits from USD 0 to total in $1 steps
+  for (let a = 0; a <= u; a += 1) {
+    const b = u - a;
+    const pa = a * r, pb = b * r;
+    const ta = calcAnnualTax(pa*12)/12;
+    const tb = calcAnnualTax(pb*12)/12;
+    const taxSum = ta + tb;
+    if (taxSum < bestSplit.minTax) {
+      bestSplit = {a,b,minTax:taxSum,table:
+        `<table>
+          <tr><th>Person</th><th>USD/mo</th><th>PKR/mo</th><th>Mo Tax (PKR)</th><th>Yr Tax (PKR)</th></tr>
+          <tr><td>A</td><td>${format(a)}</td><td>${format(pa)}</td><td>${format(ta)}</td><td>${format(ta*12)}</td></tr>
+          <tr><td>B</td><td>${format(b)}</td><td>${format(pb)}</td><td>${format(tb)}</td><td>${format(tb*12)}</td></tr>
+        </table>`};
+    }
+  }
+  
+  results.innerHTML = `
+    <p>Total PKR/mo: <strong>${format(totalPkr)}</strong></p>
+    <p>✨ Optimal split minimizes combined monthly tax (<strong>${format(bestSplit.minTax)}</strong> PKR).</p>
+    ${bestSplit.table}`;
+}
+
+const usdSalary = document.getElementById('usdSalary'),
+      rate = document.getElementById('rate'),
+      auto = document.getElementById('autoCalc'),
+      btn = document.getElementById('computeBtn'),
+      results = document.getElementById('results');
+
+if (auto.checked) {
+  usdSalary.addEventListener('input', run);
+  rate.addEventListener('input', run);
+}
+btn.addEventListener('click', run);
+
+// initial
+run();
+</script>
+</body>
+</html>

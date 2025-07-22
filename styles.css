@@ -1,0 +1,16 @@
+/* :disabled {
+        background-color: rgb(194, 193, 193) !important;
+        color: green !important;
+      } */
+thead th {
+  text-align: center;
+}
+.hidden {
+  display: none;
+}
+
+.auto-scroll {
+  /* overflow-y: scroll; */
+  overflow-x: auto;
+  max-height: 600px;
+}
